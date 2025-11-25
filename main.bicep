@@ -34,7 +34,7 @@ module storage './modules/storageAccount.bicep' = {
   }
 }
 
-module web './modules/webapp.bicep' = {
+module web './modules/webapp.bicep' ={
   name: 'webAppModule'
   params: {
     location: location
