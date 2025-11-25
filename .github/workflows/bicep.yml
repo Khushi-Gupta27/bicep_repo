@@ -38,7 +38,7 @@ jobs:
         run: az group create -n $RG_NAME -l $LOCATION
 
       - name: "Bicep compile check"
-        run: az bicep build --main.bicep --outfile out.json
+        run: az bicep build --file main.bicep --outfile out.json
 
       - name: "What-If"
         run: |
