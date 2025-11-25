@@ -44,8 +44,8 @@ jobs:
         run: |
           az deployment group what-if \
             --resource-group $RG_NAME \
-            --template-file bicep/main.bicep \
-            --parameters bicep/main.parameters.json \
+            --template-file main.bicep \
+            --parameters main.parameters.json \
             --result-format FullResourcePayloads
 
   apply:
@@ -67,8 +67,8 @@ jobs:
         run: |
           az deployment group create \
             --resource-group $RG_NAME \
-            --template-file bicep/main.bicep \
-            --parameters bicep/main.parameters.json
+            --template-file main.bicep \
+            --parameters main.parameters.json
 
       - name: "Show outputs"
         run: |
