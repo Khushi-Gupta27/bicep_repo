@@ -1,0 +1,75 @@
+
+name: "Bicep Azure CI/CD"
+run-name: "Bicep • ${{ github.actor }} • run #${{ github.run_number }}"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - "bicep/**"
+      - ".github/workflows/bicep.yml"
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "bicep/**"
+      - ".github/workflows/bicep.yml"
+
+env:
+  RG_NAME: rg-bicep-lab
+  LOCATION: centralindia
+
+jobs:
+  plan:
+    name: "Plan (What-If)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Azure Login"
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: "Ensure Resource Group exists"
+        run: az group create -n $RG_NAME -l $LOCATION
+
+      - name: "Bicep compile check"
+        run: az bicep build --file bicep/main.bicep --outfile out.json
+
+      - name: "What-If"
+        run: |
+          az deployment group what-if \
+            --resource-group $RG_NAME \
+            --template-file bicep/main.bicep \
+            --parameters bicep/main.parameters.json \
+            --result-format FullResourcePayloads
+
+  apply:
+    name: "Apply (Deploy)"
+    runs-on: ubuntu-latest
+    needs: [ plan ]                 # second job runs only if plan succeeds
+    if: github.ref == 'refs/heads/main'   # only apply on main
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Azure Login"
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: "Deploy"
+        run: |
+          az deployment group create \
+            --resource-group $RG_NAME \
+            --template-file bicep/main.bicep \
+            --parameters bicep/main.parameters.json
+
+      - name: "Show outputs"
+        run: |
+          DEPLOY_NAME=$(az deployment group list -g $RG_NAME --query "[-1].name" -o tsv)
+          az deployment group show -g $RG_NAME -n "$DEPLOY_NAME" --query "properties.outputs"
